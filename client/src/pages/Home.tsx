@@ -5,58 +5,101 @@ import TrackPreview, { type TrackInfo } from "@/components/TrackPreview";
 import DownloadButton, { type QualityOption } from "@/components/DownloadButton";
 import HistoryList from "@/components/HistoryList";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Home() {
   const [currentTrack, setCurrentTrack] = useState<TrackInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [history, setHistory] = useState<TrackInfo[]>([]);
+  const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleFetchTrack = async (url: string, trackId: string) => {
-    setIsLoading(true);
-    
-    // todo: remove mock functionality - Simulate API call
-    setTimeout(() => {
-      const mockTrack: TrackInfo = {
-        id: trackId,
-        title: 'نمونه آهنگ',
-        artist: 'هنرمند نمونه',
-        album: 'آلبوم نمونه',
-        duration: '3:45',
-        coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop',
-        releaseYear: '1402',
-        spotifyUrl: url
-      };
-      
-      setCurrentTrack(mockTrack);
-      setIsLoading(false);
-      
-      setHistory(prev => {
-        const filtered = prev.filter(t => t.id !== trackId);
-        return [mockTrack, ...filtered].slice(0, 5);
-      });
+  const { data: history = [] } = useQuery<TrackInfo[]>({
+    queryKey: ['/api/history'],
+  });
 
+  const fetchTrackMutation = useMutation({
+    mutationFn: async (trackId: string) => {
+      const trackRes = await apiRequest('GET', `/api/track/${trackId}`);
+      const trackInfo = await trackRes.json();
+      
+      const searchQuery = `${trackInfo.artist} ${trackInfo.title} audio`;
+      const youtubeRes = await apiRequest('POST', '/api/search-youtube', { query: searchQuery });
+      const youtubeResult = await youtubeRes.json();
+      
+      return { trackInfo, youtubeUrl: youtubeResult.url };
+    },
+    onSuccess: ({ trackInfo, youtubeUrl }) => {
+      setCurrentTrack(trackInfo);
+      setYoutubeUrl(youtubeUrl);
+      
       toast({
         title: "اطلاعات آهنگ دریافت شد",
         description: "می‌توانید آهنگ را دانلود کنید",
       });
-    }, 1500);
+
+      queryClient.invalidateQueries({ queryKey: ['/api/history'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطا در دریافت اطلاعات",
+        description: error.message || "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const downloadMutation = useMutation({
+    mutationFn: async ({ quality }: { quality: QualityOption }) => {
+      if (!youtubeUrl || !currentTrack) {
+        throw new Error("اطلاعات کامل نیست");
+      }
+
+      const downloadRes = await apiRequest('POST', '/api/download', { 
+        youtubeUrl, 
+        quality 
+      });
+      const downloadData = await downloadRes.json();
+
+      await apiRequest('POST', '/api/history', {
+        spotifyTrackId: currentTrack.id,
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        album: currentTrack.album,
+        duration: currentTrack.duration,
+        coverUrl: currentTrack.coverUrl,
+        releaseYear: currentTrack.releaseYear,
+        spotifyUrl: currentTrack.spotifyUrl,
+        youtubeUrl: youtubeUrl,
+      });
+
+      return downloadData;
+    },
+    onSuccess: (data) => {
+      window.open(data.downloadUrl, '_blank');
+      
+      toast({
+        title: "دانلود آغاز شد",
+        description: `${currentTrack?.title} با کیفیت ${data.quality}kbps`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/history'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطا در دانلود",
+        description: error.message || "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFetchTrack = async (url: string, trackId: string) => {
+    fetchTrackMutation.mutate(trackId);
   };
 
   const handleDownload = (quality: QualityOption) => {
     if (!currentTrack) return;
-    
-    setIsDownloading(true);
-    
-    // todo: remove mock functionality - Simulate download
-    setTimeout(() => {
-      setIsDownloading(false);
-      toast({
-        title: "دانلود با موفقیت آغاز شد",
-        description: `${currentTrack.title} با کیفیت ${quality}kbps`,
-      });
-    }, 2000);
+    downloadMutation.mutate({ quality });
   };
 
   const handleHistoryDownload = (track: TrackInfo) => {
@@ -96,7 +139,7 @@ export default function Home() {
             <div className="pt-4">
               <SpotifyLinkInput 
                 onSubmit={handleFetchTrack}
-                isLoading={isLoading}
+                isLoading={fetchTrackMutation.isPending}
               />
             </div>
 
@@ -118,18 +161,18 @@ export default function Home() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 space-y-12">
-        {isLoading && (
+        {fetchTrackMutation.isPending && (
           <TrackPreview 
             track={{} as TrackInfo} 
             isLoading={true}
           />
         )}
 
-        {currentTrack && !isLoading && (
+        {currentTrack && !fetchTrackMutation.isPending && (
           <TrackPreview track={currentTrack}>
             <DownloadButton 
               onDownload={handleDownload}
-              isDownloading={isDownloading}
+              isDownloading={downloadMutation.isPending}
             />
           </TrackPreview>
         )}
@@ -141,7 +184,7 @@ export default function Home() {
           />
         )}
 
-        {!currentTrack && !isLoading && history.length === 0 && (
+        {!currentTrack && !fetchTrackMutation.isPending && history.length === 0 && (
           <div className="text-center py-12 space-y-6">
             <div className="max-w-2xl mx-auto">
               <h2 className="text-2xl font-bold mb-4">چگونه کار می‌کند؟</h2>

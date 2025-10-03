@@ -77,9 +77,11 @@ export default function Home() {
     onSuccess: (data) => {
       window.open(data.downloadUrl, '_blank');
       
+      const qualityText = data.quality > 0 ? `با کیفیت ${data.quality}kbps` : 'با بهترین کیفیت موجود';
+      
       toast({
         title: "دانلود آغاز شد",
-        description: `${currentTrack?.title} با کیفیت ${data.quality}kbps`,
+        description: `${currentTrack?.title} ${qualityText}`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/history'] });

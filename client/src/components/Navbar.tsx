@@ -10,11 +10,11 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          <Link href="/">
-            <a className="flex items-center gap-3 hover-elevate active-elevate-2 px-3 py-2 rounded-md transition-all" data-testid="link-home">
+          <Link href="/" data-testid="link-home">
+            <div className="flex items-center gap-3 hover-elevate active-elevate-2 px-3 py-2 rounded-md transition-all cursor-pointer">
               <SiSpotify className="text-primary w-8 h-8" />
               <span className="font-bold text-lg hidden sm:inline">دانلود اسپاتیفای</span>
-            </a>
+            </div>
           </Link>
 
           <div className="flex items-center gap-2">

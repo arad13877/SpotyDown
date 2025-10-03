@@ -23,17 +23,17 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">لینک‌های مفید</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-home">
+                <Link href="/" data-testid="link-footer-home">
+                  <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                     صفحه اصلی
-                  </a>
+                  </div>
                 </Link>
               </li>
               <li>
-                <Link href="/search">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-search">
-                    جستجو
-                  </a>
+                <Link href="/library" data-testid="link-footer-library">
+                  <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    کتابخانه
+                  </div>
                 </Link>
               </li>
               <li>

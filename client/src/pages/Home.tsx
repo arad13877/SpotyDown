@@ -1,118 +1,176 @@
 import { useState } from "react";
-import HeroSection from "@/components/HeroSection";
-import MusicGrid from "@/components/MusicGrid";
-import GenreCard, { type Genre } from "@/components/GenreCard";
-import { type MusicTrack } from "@/components/MusicCard";
-import { useLocation } from "wouter";
+import { SiSpotify } from "react-icons/si";
+import SpotifyLinkInput from "@/components/SpotifyLinkInput";
+import TrackPreview, { type TrackInfo } from "@/components/TrackPreview";
+import DownloadButton, { type QualityOption } from "@/components/DownloadButton";
+import HistoryList from "@/components/HistoryList";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
-  const [, setLocation] = useLocation();
+  const [currentTrack, setCurrentTrack] = useState<TrackInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [history, setHistory] = useState<TrackInfo[]>([]);
+  const { toast } = useToast();
 
-  // todo: remove mock functionality
-  const popularTracks: MusicTrack[] = [
-    {
-      id: '1',
-      title: 'بی‌تفاوت',
-      artist: 'رضا بهرام',
-      album: 'آلبوم اول',
-      duration: '3:45',
-      coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop',
-      quality: 'HD'
-    },
-    {
-      id: '2',
-      title: 'قصه پریا',
-      artist: 'محسن چاوشی',
-      album: 'آلبوم دوم',
-      duration: '4:12',
-      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
-    },
-    {
-      id: '3',
-      title: 'دلم گرفته',
-      artist: 'حمید هیراد',
-      album: 'آلبوم سوم',
-      duration: '3:30',
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop',
-      quality: 'HD'
-    },
-    {
-      id: '4',
-      title: 'یادت بخیر',
-      artist: 'محمد علیزاده',
-      album: 'آلبوم چهارم',
-      duration: '4:05',
-      coverUrl: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=400&h=400&fit=crop',
-    },
-    {
-      id: '5',
-      title: 'گل یخ',
-      artist: 'سیروان خسروی',
-      album: 'آلبوم پنجم',
-      duration: '3:55',
-      coverUrl: 'https://images.unsplash.com/photo-1458560871784-56d23406c091?w=400&h=400&fit=crop',
-      quality: 'HD'
-    },
-    {
-      id: '6',
-      title: 'هر چی تو بخوای',
-      artist: 'علی یاسینی',
-      album: 'آلبوم ششم',
-      duration: '4:20',
-      coverUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&fit=crop',
-    },
-    {
-      id: '7',
-      title: 'دریا',
-      artist: 'شادمهر عقیلی',
-      album: 'آلبوم هفتم',
-      duration: '3:48',
-      coverUrl: 'https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=400&h=400&fit=crop',
-      quality: 'HD'
-    },
-    {
-      id: '8',
-      title: 'آخرین باری که',
-      artist: 'بنیامین بهادری',
-      album: 'آلبوم هشتم',
-      duration: '4:15',
-      coverUrl: 'https://images.unsplash.com/photo-1476973422084-e0fa66ff9456?w=400&h=400&fit=crop',
-    },
-  ];
+  const handleFetchTrack = async (url: string, trackId: string) => {
+    setIsLoading(true);
+    
+    // todo: remove mock functionality - Simulate API call
+    setTimeout(() => {
+      const mockTrack: TrackInfo = {
+        id: trackId,
+        title: 'نمونه آهنگ',
+        artist: 'هنرمند نمونه',
+        album: 'آلبوم نمونه',
+        duration: '3:45',
+        coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop',
+        releaseYear: '1402',
+        spotifyUrl: url
+      };
+      
+      setCurrentTrack(mockTrack);
+      setIsLoading(false);
+      
+      setHistory(prev => {
+        const filtered = prev.filter(t => t.id !== trackId);
+        return [mockTrack, ...filtered].slice(0, 5);
+      });
 
-  // todo: remove mock functionality
-  const genres: Genre[] = [
-    { id: '1', name: 'پاپ' },
-    { id: '2', name: 'راک' },
-    { id: '3', name: 'رپ' },
-    { id: '4', name: 'سنتی' },
-    { id: '5', name: 'الکترونیک' },
-    { id: '6', name: 'جز' },
-  ];
+      toast({
+        title: "اطلاعات آهنگ دریافت شد",
+        description: "می‌توانید آهنگ را دانلود کنید",
+      });
+    }, 1500);
+  };
 
-  const handleSearch = (query: string) => {
-    console.log('جستجو در صفحه اصلی:', query);
-    setLocation('/search');
+  const handleDownload = (quality: QualityOption) => {
+    if (!currentTrack) return;
+    
+    setIsDownloading(true);
+    
+    // todo: remove mock functionality - Simulate download
+    setTimeout(() => {
+      setIsDownloading(false);
+      toast({
+        title: "دانلود با موفقیت آغاز شد",
+        description: `${currentTrack.title} با کیفیت ${quality}kbps`,
+      });
+    }, 2000);
+  };
+
+  const handleHistoryDownload = (track: TrackInfo) => {
+    setCurrentTrack(track);
+    toast({
+      title: "آماده دانلود",
+      description: track.title,
+    });
   };
 
   return (
     <div className="min-h-screen">
-      <HeroSection onSearch={handleSearch} />
+      <div className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-background"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, hsl(var(--primary) / 0.1) 0%, transparent 50%)'
+          }}
+        />
+        
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,hsl(var(--background))_100%)]" />
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-20">
+          <div className="text-center space-y-8">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <SiSpotify className="text-primary w-16 h-16 sm:w-20 sm:h-20" />
+            </div>
+            
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-l from-primary to-foreground bg-clip-text text-transparent">
+              دانلود آهنگ از اسپاتیفای
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+              لینک آهنگ اسپاتیفای خود را وارد کنید و با بهترین کیفیت دانلود کنید
+            </p>
+
+            <div className="pt-4">
+              <SpotifyLinkInput 
+                onSubmit={handleFetchTrack}
+                isLoading={isLoading}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground pt-4">
+              <span className="flex items-center gap-1">
+                ✓ کیفیت 320kbps
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                ✓ دانلود سریع
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                ✓ رایگان و نامحدود
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 space-y-12">
-        <section>
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">ژانرهای محبوب</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {genres.map((genre) => (
-              <GenreCard key={genre.id} genre={genre} />
-            ))}
-          </div>
-        </section>
+        {isLoading && (
+          <TrackPreview 
+            track={{} as TrackInfo} 
+            isLoading={true}
+          />
+        )}
 
-        <section>
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">آهنگ‌های محبوب</h2>
-          <MusicGrid tracks={popularTracks} />
-        </section>
+        {currentTrack && !isLoading && (
+          <TrackPreview track={currentTrack}>
+            <DownloadButton 
+              onDownload={handleDownload}
+              isDownloading={isDownloading}
+            />
+          </TrackPreview>
+        )}
+
+        {history.length > 0 && (
+          <HistoryList 
+            tracks={history}
+            onDownload={handleHistoryDownload}
+          />
+        )}
+
+        {!currentTrack && !isLoading && history.length === 0 && (
+          <div className="text-center py-12 space-y-6">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-2xl font-bold mb-4">چگونه کار می‌کند؟</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
+                <div className="p-6 rounded-lg bg-card border border-border">
+                  <div className="text-3xl font-bold text-primary mb-2">۱</div>
+                  <h3 className="font-semibold mb-2">لینک را کپی کنید</h3>
+                  <p className="text-sm text-muted-foreground">
+                    لینک آهنگ مورد نظر را از اسپاتیفای کپی کنید
+                  </p>
+                </div>
+                <div className="p-6 rounded-lg bg-card border border-border">
+                  <div className="text-3xl font-bold text-primary mb-2">۲</div>
+                  <h3 className="font-semibold mb-2">لینک را وارد کنید</h3>
+                  <p className="text-sm text-muted-foreground">
+                    لینک را در کادر بالا وارد کرده و دکمه دریافت را بزنید
+                  </p>
+                </div>
+                <div className="p-6 rounded-lg bg-card border border-border">
+                  <div className="text-3xl font-bold text-primary mb-2">۳</div>
+                  <h3 className="font-semibold mb-2">دانلود کنید</h3>
+                  <p className="text-sm text-muted-foreground">
+                    کیفیت دلخواه را انتخاب کرده و آهنگ را دانلود کنید
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

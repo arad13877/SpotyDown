@@ -1,4 +1,4 @@
-import { Search, Home, Library, Info } from "lucide-react";
+import { Home, Library } from "lucide-react";
 import { SiSpotify } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
@@ -27,18 +27,6 @@ export default function Navbar() {
               >
                 <Home className="w-4 h-4" />
                 <span className="hidden sm:inline">خانه</span>
-              </Button>
-            </Link>
-            
-            <Link href="/search">
-              <Button 
-                variant={location === "/search" ? "secondary" : "ghost"} 
-                size="sm"
-                className="gap-2"
-                data-testid="button-nav-search"
-              >
-                <Search className="w-4 h-4" />
-                <span className="hidden sm:inline">جستجو</span>
               </Button>
             </Link>
             
